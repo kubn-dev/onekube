@@ -1,0 +1,920 @@
+resources:
+- apiVersion: generators.external-secrets.io/v1alpha1
+  kind: ECRAuthorizationToken
+  metadata:
+    name: ecr
+    namespace: core
+  spec:
+    region: eu-west-1
+- apiVersion: external-secrets.io/v1beta1
+  kind: ExternalSecret
+  metadata:
+    name: kargo-api-cert
+    namespace: kargo
+  spec:
+    refreshInterval: 1h
+    secretStoreRef:
+      name: aws-parameter-store
+      kind: ClusterSecretStore
+    target:
+      name: kargo-api-cert
+      template:
+        engineVersion: v2
+        type: kubernetes.io/tls
+        data:
+          tls.crt: "{{ .crt }}"
+          tls.key: "{{ .key }}"
+    data:
+      - secretKey: crt
+        remoteRef:
+          key: /gdo/ds3/certificate/cer
+      - secretKey: key
+        remoteRef:
+          key: /gdo/ds3/certificate/key
+- apiVersion: external-secrets.io/v1beta1
+  kind: ExternalSecret
+  metadata:
+    name: kargo-api-ingress-cert
+    namespace: kargo
+  spec:
+    refreshInterval: 1h
+    secretStoreRef:
+      name: aws-parameter-store
+      kind: ClusterSecretStore
+    target:
+      name: kargo-api-ingress-cert
+      template:
+        engineVersion: v2
+        type: kubernetes.io/tls
+        data:
+          tls.crt: "{{ .crt }}"
+          tls.key: "{{ .key }}"
+    data:
+      - secretKey: crt
+        remoteRef:
+          key: /gdo/ds3/certificate/cer
+      - secretKey: key
+        remoteRef:
+          key: /gdo/ds3/certificate/key
+- apiVersion: external-secrets.io/v1beta1
+  kind: ExternalSecret
+  metadata:
+    name: api-repo
+    namespace: core
+  spec:
+    refreshInterval: 1h
+    secretStoreRef:
+      name: aws-parameter-store
+      kind: ClusterSecretStore
+    target:
+      name: api-repo
+      template:
+        engineVersion: v2
+        type: Opaque
+        metadata:
+          labels:
+            kargo.akuity.io/cred-type: git
+        data:
+          repoURL: "${api_repo_url}"
+          username: kargo
+          password: "{{ .token }}"
+    data:
+      - secretKey: token
+        remoteRef:
+          key: /gdo/ds3/gitlab/write-token
+- apiVersion: external-secrets.io/v1beta1
+  kind: ExternalSecret
+  metadata:
+    name: api-chart-repo
+    namespace: core
+  spec:
+    refreshInterval: 1h
+    secretStoreRef:
+      name: aws-parameter-store
+      kind: ClusterSecretStore
+    target:
+      name: api-chart-repo
+      template:
+        engineVersion: v2
+        type: Opaque
+        metadata:
+          labels:
+            kargo.akuity.io/cred-type: git
+        data:
+          repoURL: "${api_chart_repo_url}"
+          username: kargo
+          password: "{{ .token }}"
+    data:
+      - secretKey: token
+        remoteRef:
+          key: /gdo/ds3/gitlab/write-token
+- apiVersion: external-secrets.io/v1beta1
+  kind: ExternalSecret
+  metadata:
+    name: api-charts
+    namespace: core
+  spec:
+    refreshInterval: 30m
+    target:
+      name: api-charts
+      template:
+        metadata:
+          labels:
+            kargo.akuity.io/cred-type: image
+        data:
+          repoURL: "${api_charts_url}"
+          password: "{{ .password }}"
+          username: "{{ .username }}"
+    dataFrom:
+      - sourceRef:
+          generatorRef:
+            apiVersion: generators.external-secrets.io/v1alpha1
+            kind: ECRAuthorizationToken
+            name: ecr
+- apiVersion: external-secrets.io/v1beta1
+  kind: ExternalSecret
+  metadata:
+    name: api-images
+    namespace: core
+  spec:
+    refreshInterval: 30m
+    target:
+      name: api-images
+      template:
+        metadata:
+          labels:
+            kargo.akuity.io/cred-type: image
+        data:
+          repoURL: "${api_images_url}"
+          password: "{{ .password }}"
+          username: "{{ .username }}"
+    dataFrom:
+      - sourceRef:
+          generatorRef:
+            apiVersion: generators.external-secrets.io/v1alpha1
+            kind: ECRAuthorizationToken
+            name: ecr
+- apiVersion: external-secrets.io/v1beta1
+  kind: ExternalSecret
+  metadata:
+    name: front-repo
+    namespace: core
+  spec:
+    refreshInterval: 1h
+    secretStoreRef:
+      name: aws-parameter-store
+      kind: ClusterSecretStore
+    target:
+      name: front-repo
+      template:
+        engineVersion: v2
+        type: Opaque
+        metadata:
+          labels:
+            kargo.akuity.io/cred-type: git
+        data:
+          repoURL: "${front_repo_url}"
+          username: kargo
+          password: "{{ .token }}"
+    data:
+      - secretKey: token
+        remoteRef:
+          key: /gdo/ds3/gitlab/write-token
+- apiVersion: external-secrets.io/v1beta1
+  kind: ExternalSecret
+  metadata:
+    name: front-chart-repo
+    namespace: core
+  spec:
+    refreshInterval: 1h
+    secretStoreRef:
+      name: aws-parameter-store
+      kind: ClusterSecretStore
+    target:
+      name: front-chart-repo
+      template:
+        engineVersion: v2
+        type: Opaque
+        metadata:
+          labels:
+            kargo.akuity.io/cred-type: git
+        data:
+          repoURL: "${front_chart_repo_url}"
+          username: kargo
+          password: "{{ .token }}"
+    data:
+      - secretKey: token
+        remoteRef:
+          key: /gdo/ds3/gitlab/write-token
+- apiVersion: external-secrets.io/v1beta1
+  kind: ExternalSecret
+  metadata:
+    name: front-charts
+    namespace: core
+  spec:
+    refreshInterval: 30m
+    target:
+      name: front-charts
+      template:
+        metadata:
+          labels:
+            kargo.akuity.io/cred-type: image
+        data:
+          repoURL: "${front_charts_url}"
+          password: "{{ .password }}"
+          username: "{{ .username }}"
+    dataFrom:
+      - sourceRef:
+          generatorRef:
+            apiVersion: generators.external-secrets.io/v1alpha1
+            kind: ECRAuthorizationToken
+            name: ecr
+- apiVersion: external-secrets.io/v1beta1
+  kind: ExternalSecret
+  metadata:
+    name: front-images
+    namespace: core
+  spec:
+    refreshInterval: 30m
+    target:
+      name: front-images
+      template:
+        metadata:
+          labels:
+            kargo.akuity.io/cred-type: image
+        data:
+          repoURL: "${front_images_url}"
+          password: "{{ .password }}"
+          username: "{{ .username }}"
+    dataFrom:
+      - sourceRef:
+          generatorRef:
+            apiVersion: generators.external-secrets.io/v1alpha1
+            kind: ECRAuthorizationToken
+            name: ecr
+- apiVersion: external-secrets.io/v1beta1
+  kind: ExternalSecret
+  metadata:
+    name: i4s-chart-repo
+    namespace: core
+  spec:
+    refreshInterval: 1h
+    secretStoreRef:
+      name: aws-parameter-store
+      kind: ClusterSecretStore
+    target:
+      name: i4s-chart-repo
+      template:
+        engineVersion: v2
+        type: Opaque
+        metadata:
+          labels:
+            kargo.akuity.io/cred-type: git
+        data:
+          repoURL: "${i4s_chart_repo_url}"
+          username: kargo
+          password: "{{ .token }}"
+    data:
+      - secretKey: token
+        remoteRef:
+          key: /gdo/ds3/gitlab/write-token
+- apiVersion: external-secrets.io/v1beta1
+  kind: ExternalSecret
+  metadata:
+    name: i4s-charts
+    namespace: core
+  spec:
+    refreshInterval: 30m
+    target:
+      name: i4s-charts
+      template:
+        metadata:
+          labels:
+            kargo.akuity.io/cred-type: image
+        data:
+          repoURL: "${i4s_charts_url}"
+          password: "{{ .password }}"
+          username: "{{ .username }}"
+    dataFrom:
+      - sourceRef:
+          generatorRef:
+            apiVersion: generators.external-secrets.io/v1alpha1
+            kind: ECRAuthorizationToken
+            name: ecr
+- apiVersion: external-secrets.io/v1beta1
+  kind: ExternalSecret
+  metadata:
+    name: jupyter-hub-images
+    namespace: core
+  spec:
+    refreshInterval: 30m
+    target:
+      name: jupyter-hub-images
+      template:
+        metadata:
+          labels:
+            kargo.akuity.io/cred-type: image
+        data:
+          repoURL: "${jupyter_hub_images_url}"
+          password: "{{ .password }}"
+          username: "{{ .username }}"
+    dataFrom:
+      - sourceRef:
+          generatorRef:
+            apiVersion: generators.external-secrets.io/v1alpha1
+            kind: ECRAuthorizationToken
+            name: ecr
+- apiVersion: external-secrets.io/v1beta1
+  kind: ExternalSecret
+  metadata:
+    name: jupyter-lab-images
+    namespace: core
+  spec:
+    refreshInterval: 30m
+    target:
+      name: jupyter-lab-images
+      template:
+        metadata:
+          labels:
+            kargo.akuity.io/cred-type: image
+        data:
+          repoURL: "${jupyter_lab_images_url}"
+          password: "{{ .password }}"
+          username: "{{ .username }}"
+    dataFrom:
+      - sourceRef:
+          generatorRef:
+            apiVersion: generators.external-secrets.io/v1alpha1
+            kind: ECRAuthorizationToken
+            name: ecr
+- apiVersion: kargo.akuity.io/v1alpha1
+  kind: Project
+  metadata:
+    name: core
+    annotations:
+      argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+      argocd.argoproj.io/sync-wave: "0"
+  spec:
+    promotionPolicies:
+      - stage: dev-api
+        autoPromotionEnabled: true
+      - stage: dev-front
+        autoPromotionEnabled: true
+      - stage: dev-hub
+        autoPromotionEnabled: true
+      - stage: dev-lab
+        autoPromotionEnabled: true
+- apiVersion: kargo.akuity.io/v1alpha1
+  kind: Warehouse
+  metadata:
+    name: api
+    namespace: core
+    annotations:
+      argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+      argocd.argoproj.io/sync-wave: "1"
+      kargo.akuity.io/color: indigo
+  spec:
+    subscriptions:
+      - image:
+          repoURL: "${api_images_url}"
+- apiVersion: kargo.akuity.io/v1alpha1
+  kind: Warehouse
+  metadata:
+    name: front
+    namespace: core
+    annotations:
+      argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+      argocd.argoproj.io/sync-wave: "1"
+      kargo.akuity.io/color: violet
+  spec:
+    subscriptions:
+      - image:
+          repoURL: "${front_images_url}"
+- apiVersion: kargo.akuity.io/v1alpha1
+  kind: Warehouse
+  metadata:
+    name: jupyter-hub
+    namespace: core
+    annotations:
+      argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+      argocd.argoproj.io/sync-wave: "1"
+      kargo.akuity.io/color: green
+  spec:
+    interval: 10s
+    subscriptions:
+      - image:
+          repoURL: "${jupyter_hub_images_url}"
+- apiVersion: kargo.akuity.io/v1alpha1
+  kind: Warehouse
+  metadata:
+    name: jupyter-lab
+    namespace: core
+    annotations:
+      argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+      argocd.argoproj.io/sync-wave: "1"
+      kargo.akuity.io/color: avocado
+  spec:
+    interval: 10s
+    subscriptions:
+      - image:
+          repoURL: "${jupyter_lab_images_url}"
+- apiVersion: kargo.akuity.io/v1alpha1
+  kind: Stage
+  metadata:
+    name: dev-api
+    namespace: core
+    annotations:
+      argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+      argocd.argoproj.io/sync-wave: "1"
+      kargo.akuity.io/color: red
+  spec:
+    requestedFreight:
+      - origin:
+          kind: Warehouse
+          name: api
+        sources:
+          direct: true
+    promotionTemplate:
+      spec:
+        steps:
+          - uses: git-clone
+            config:
+              repoURL: "${api_chart_repo_url}"
+              checkout:
+                - branch: main
+                  create: true
+                  path: ./out
+          - uses: helm-update-image
+            as: api-update-image
+            config:
+              images:
+                - image: "${api_images_url}"
+                  key: api.image.tag
+                  value: Tag
+              path: ./out/values-dev.yaml
+          - uses: git-commit
+            config:
+              message: "feat(kargo): update api image tag [skip ci]"
+              path: ./out
+          - uses: git-push
+            config:
+              path: ./out
+- apiVersion: kargo.akuity.io/v1alpha1
+  kind: Stage
+  metadata:
+    name: dev-front
+    namespace: core
+    annotations:
+      argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+      argocd.argoproj.io/sync-wave: "1"
+      kargo.akuity.io/color: red
+  spec:
+    requestedFreight:
+      - origin:
+          kind: Warehouse
+          name: front
+        sources:
+          direct: true
+    promotionTemplate:
+      spec:
+        steps:
+          - uses: git-clone
+            config:
+              repoURL: "${front_chart_repo_url}"
+              checkout:
+                - branch: main
+                  create: true
+                  path: ./out
+          - uses: helm-update-image
+            as: front-update-image
+            config:
+              images:
+                - image: "${front_images_url}"
+                  key: front.image.tag
+                  value: Tag
+              path: ./out/values-dev.yaml
+          - uses: git-commit
+            config:
+              message: "feat(kargo): update front image tag [skip ci]"
+              path: ./out
+          - uses: git-push
+            config:
+              path: ./out
+- apiVersion: kargo.akuity.io/v1alpha1
+  kind: Stage
+  metadata:
+    name: dev-hub
+    namespace: core
+    annotations:
+      argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+      argocd.argoproj.io/sync-wave: "1"
+      kargo.akuity.io/color: red
+  spec:
+    requestedFreight:
+      - origin:
+          kind: Warehouse
+          name: jupyter-hub
+        sources:
+          direct: true
+    promotionTemplate:
+      spec:
+        steps:
+          - uses: git-clone
+            config:
+              repoURL: "${i4s_chart_repo_url}"
+              checkout:
+                - branch: main
+                  create: true
+                  path: ./out
+          - uses: helm-update-image
+            as: hub-update-image
+            config:
+              images:
+                - image: "${jupyter_hub_images_url}"
+                  key: data.HUB_IMAGE_TAG
+                  value: Tag
+              path: ./out/kustomize/dev/configmap.yaml
+          - uses: git-commit
+            config:
+              message: "feat(kargo): update i4s jupyter-hub image tag [skip ci]"
+              path: ./out
+          - uses: git-push
+            config:
+              path: ./out
+- apiVersion: kargo.akuity.io/v1alpha1
+  kind: Stage
+  metadata:
+    name: dev-lab
+    namespace: core
+    annotations:
+      argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+      argocd.argoproj.io/sync-wave: "1"
+      kargo.akuity.io/color: red
+  spec:
+    requestedFreight:
+      - origin:
+          kind: Warehouse
+          name: jupyter-lab
+        sources:
+          direct: true
+    promotionTemplate:
+      spec:
+        steps:
+          - uses: git-clone
+            config:
+              repoURL: "${i4s_chart_repo_url}"
+              checkout:
+                - branch: main
+                  create: true
+                  path: ./out
+          - uses: helm-update-image
+            as: lab-update-image
+            config:
+              images:
+                - image: "${jupyter_lab_images_url}"
+                  key: data.LAB_IMAGE_TAG
+                  value: Tag
+              path: ./out/kustomize/dev/configmap.yaml
+          - uses: git-commit
+            config:
+              message: "feat(kargo): update i4s jupyter-lab image tag [skip ci]"
+              path: ./out
+          - uses: git-push
+            config:
+              path: ./out
+- apiVersion: kargo.akuity.io/v1alpha1
+  kind: Stage
+  metadata:
+    name: ppr-api
+    namespace: core
+    annotations:
+      argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+      argocd.argoproj.io/sync-wave: "1"
+      kargo.akuity.io/color: yellow
+  spec:
+    requestedFreight:
+      - origin:
+          kind: Warehouse
+          name: api
+        sources:
+          stages:
+            - dev-api
+    promotionTemplate:
+      spec:
+        steps:
+          - uses: git-clone
+            config:
+              repoURL: "${api_chart_repo_url}"
+              checkout:
+                - branch: main
+                  create: true
+                  path: ./out
+          - uses: helm-update-image
+            as: api-update-image
+            config:
+              images:
+                - image: "${api_images_url}"
+                  key: api.image.tag
+                  value: Tag
+              path: ./out/values-ppr.yaml
+          - uses: git-commit
+            config:
+              message: "feat(kargo): update api image tag [skip ci]"
+              path: ./out
+          - uses: git-push
+            config:
+              path: ./out
+- apiVersion: kargo.akuity.io/v1alpha1
+  kind: Stage
+  metadata:
+    name: ppr-front
+    namespace: core
+    annotations:
+      argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+      argocd.argoproj.io/sync-wave: "1"
+      kargo.akuity.io/color: yellow
+  spec:
+    requestedFreight:
+      - origin:
+          kind: Warehouse
+          name: front
+        sources:
+          stages:
+            - dev-front
+    promotionTemplate:
+      spec:
+        steps:
+          - uses: git-clone
+            config:
+              repoURL: "${front_chart_repo_url}"
+              checkout:
+                - branch: main
+                  create: true
+                  path: ./out
+          - uses: helm-update-image
+            as: front-update-image
+            config:
+              images:
+                - image: "${front_images_url}"
+                  key: front.image.tag
+                  value: Tag
+              path: ./out/values-ppr.yaml
+          - uses: git-commit
+            config:
+              message: "feat(kargo): update front image tag [skip ci]"
+              path: ./out
+          - uses: git-push
+            config:
+              path: ./out
+- apiVersion: kargo.akuity.io/v1alpha1
+  kind: Stage
+  metadata:
+    name: ppr-hub
+    namespace: core
+    annotations:
+      argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+      argocd.argoproj.io/sync-wave: "1"
+      kargo.akuity.io/color: yellow
+  spec:
+    requestedFreight:
+      - origin:
+          kind: Warehouse
+          name: jupyter-hub
+        sources:
+          stages:
+            - dev-hub
+    promotionTemplate:
+      spec:
+        steps:
+          - uses: git-clone
+            config:
+              repoURL: "${i4s_chart_repo_url}"
+              checkout:
+                - branch: main
+                  create: true
+                  path: ./out
+          - uses: helm-update-image
+            as: hub-update-image
+            config:
+              images:
+                - image: "${jupyter_hub_images_url}"
+                  key: data.HUB_IMAGE_TAG
+                  value: Tag
+              path: ./out/kustomize/ppr/configmap.yaml
+          - uses: git-commit
+            config:
+              message: "feat(kargo): update i4s jupyter-hub image tag [skip ci]"
+              path: ./out
+          - uses: git-push
+            config:
+              path: ./out
+- apiVersion: kargo.akuity.io/v1alpha1
+  kind: Stage
+  metadata:
+    name: ppr-lab
+    namespace: core
+    annotations:
+      argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+      argocd.argoproj.io/sync-wave: "1"
+      kargo.akuity.io/color: yellow
+  spec:
+    requestedFreight:
+      - origin:
+          kind: Warehouse
+          name: jupyter-lab
+        sources:
+          stages:
+            - dev-lab
+    promotionTemplate:
+      spec:
+        steps:
+          - uses: git-clone
+            config:
+              repoURL: "${i4s_chart_repo_url}"
+              checkout:
+                - branch: main
+                  create: true
+                  path: ./out
+          - uses: helm-update-image
+            as: lab-update-image
+            config:
+              images:
+                - image: "${jupyter_lab_images_url}"
+                  key: data.LAB_IMAGE_TAG
+                  value: Tag
+              path: ./out/kustomize/ppr/configmap.yaml
+          - uses: git-commit
+            config:
+              message: "feat(kargo): update i4s jupyter-lab image tag [skip ci]"
+              path: ./out
+          - uses: git-push
+            config:
+              path: ./out
+- apiVersion: kargo.akuity.io/v1alpha1
+  kind: Stage
+  metadata:
+    name: prd-api
+    namespace: core
+    annotations:
+      argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+      argocd.argoproj.io/sync-wave: "1"
+      kargo.akuity.io/color: blue
+  spec:
+    requestedFreight:
+      - origin:
+          kind: Warehouse
+          name: api
+        sources:
+          stages:
+            - ppr-api
+    promotionTemplate:
+      spec:
+        steps:
+          - uses: git-clone
+            config:
+              repoURL: "${api_chart_repo_url}"
+              checkout:
+                - branch: main
+                  create: true
+                  path: ./out
+          - uses: helm-update-image
+            as: api-update-image
+            config:
+              images:
+                - image: "${api_images_url}"
+                  key: api.image.tag
+                  value: Tag
+              path: ./out/values-prd.yaml
+          - uses: git-commit
+            config:
+              message: "feat(kargo): update api image tag [skip ci]"
+              path: ./out
+          - uses: git-push
+            config:
+              path: ./out
+- apiVersion: kargo.akuity.io/v1alpha1
+  kind: Stage
+  metadata:
+    name: prd-front
+    namespace: core
+    annotations:
+      argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+      argocd.argoproj.io/sync-wave: "1"
+      kargo.akuity.io/color: blue
+  spec:
+    requestedFreight:
+      - origin:
+          kind: Warehouse
+          name: front
+        sources:
+          stages:
+            - ppr-front
+    promotionTemplate:
+      spec:
+        steps:
+          - uses: git-clone
+            config:
+              repoURL: "${front_chart_repo_url}"
+              checkout:
+                - branch: main
+                  create: true
+                  path: ./out
+          - uses: helm-update-image
+            as: front-update-image
+            config:
+              images:
+                - image: "${front_images_url}"
+                  key: front.image.tag
+                  value: Tag
+              path: ./out/values-prd.yaml
+          - uses: git-commit
+            config:
+              message: "feat(kargo): update front image tag [skip ci]"
+              path: ./out
+          - uses: git-push
+            config:
+              path: ./out
+- apiVersion: kargo.akuity.io/v1alpha1
+  kind: Stage
+  metadata:
+    name: prd-hub
+    namespace: core
+    annotations:
+      argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+      argocd.argoproj.io/sync-wave: "1"
+      kargo.akuity.io/color: blue
+  spec:
+    requestedFreight:
+      - origin:
+          kind: Warehouse
+          name: jupyter-hub
+        sources:
+          stages:
+            - ppr-hub
+    promotionTemplate:
+      spec:
+        steps:
+          - uses: git-clone
+            config:
+              repoURL: "${i4s_chart_repo_url}"
+              checkout:
+                - branch: main
+                  create: true
+                  path: ./out
+          - uses: helm-update-image
+            as: hub-update-image
+            config:
+              images:
+                - image: "${jupyter_hub_images_url}"
+                  key: data.HUB_IMAGE_TAG
+                  value: Tag
+              path: ./out/kustomize/prd/configmap.yaml
+          - uses: git-commit
+            config:
+              message: "feat(kargo): update i4s jupyter-hub image tag [skip ci]"
+              path: ./out
+          - uses: git-push
+            config:
+              path: ./out
+- apiVersion: kargo.akuity.io/v1alpha1
+  kind: Stage
+  metadata:
+    name: prd-lab
+    namespace: core
+    annotations:
+      argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+      argocd.argoproj.io/sync-wave: "1"
+      kargo.akuity.io/color: blue
+  spec:
+    requestedFreight:
+      - origin:
+          kind: Warehouse
+          name: jupyter-lab
+        sources:
+          stages:
+            - ppr-lab
+    promotionTemplate:
+      spec:
+        steps:
+          - uses: git-clone
+            config:
+              repoURL: "${i4s_chart_repo_url}"
+              checkout:
+                - branch: main
+                  create: true
+                  path: ./out
+          - uses: helm-update-image
+            as: lab-update-image
+            config:
+              images:
+                - image: "${jupyter_lab_images_url}"
+                  key: data.LAB_IMAGE_TAG
+                  value: Tag
+              path: ./out/kustomize/prd/configmap.yaml
+          - uses: git-commit
+            config:
+              message: "feat(kargo): update i4s jupyter-lab image tag [skip ci]"
+              path: ./out
+          - uses: git-push
+            config:
+              path: ./out

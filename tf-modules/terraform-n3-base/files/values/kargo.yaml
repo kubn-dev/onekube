@@ -1,0 +1,68 @@
+api:
+  logLevel: DEBUG
+  host: ${host}
+  argocd:
+    urls: 
+     "": https://${host_argocd}
+  rollouts:
+    integrationEnabled: false
+  tls:
+    enabled: true
+    selfSignedCert: true
+    terminatedUpstream: true
+  oidc:
+    enabled: true
+    admins:
+      claims:
+        email:
+          - ${email}
+    dex:
+      enabled: true
+      volumeMounts:
+        - name: ${google_dex_service_account_key_secret_name}
+          mountPath: /etc/dex-google
+          readOnly: true
+      volumes:
+        - name: ${google_dex_service_account_key_secret_name}
+          secret:
+            secretName: ${google_dex_service_account_key_secret_name}
+            items:
+              - key: key
+                path: ${google_dex_service_account_key_secret_name}.json
+      tls:
+        selfSignedCert: true
+      connectors:
+        - config:
+            clientID: ${google_oauth_client_id}
+            clientSecret: ${google_oauth_client_secret}
+            serviceAccountFilePath: /etc/dex-google/${google_dex_service_account_key_secret_name}.json
+            redirectURI: https://${host}/api/dex/callback
+            hostedDomains:
+              - ${google_oauth_hosted_domain}
+            domainToAdminEmail: 
+              naiama.com: ${email}
+          type: google
+          id: google
+          name: Google
+  adminAccount:
+    passwordHash: ${kargo_password_hash}
+    tokenSigningKey: ${kargo_token_signing_key}
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    annotations:
+      cert-manager.io/issuer: prod-issuer
+      cert-manager.io/issuer-kind: ClusterOriginIssuer
+      cert-manager.io/issuer-group: cert-manager.k8s.cloudflare.com
+      service.beta.kubernetes.io/scw-loadbalancer-use-hostname: "true"
+      traefik.ingress.kubernetes.io/router.entrypoints: websecure
+      traefik.ingress.kubernetes.io/router.tls.passthrough: "true"
+    tls: 
+      enabled: true
+      selfSignedCert: false
+controller:
+  logLevel: DEBUG
+  rollouts:
+    integrationEnabled: false
+managementController:
+  logLevel: DEBUG

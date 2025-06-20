@@ -1,0 +1,3 @@
+crds:
+  # this should really be managed independently of the Helm chart in a prd stage
+  enabled: true

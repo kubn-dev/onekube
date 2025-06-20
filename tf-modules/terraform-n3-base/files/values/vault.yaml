@@ -1,0 +1,110 @@
+global:
+  tlsDisable: false
+server:
+  enabled: "-"
+  extraEnvironmentVars:
+    GOOGLE_REGION: ${google_region}
+    GOOGLE_PROJECT: ${google_project_name}
+    GOOGLE_APPLICATION_CREDENTIALS: /vault/userconfig/google-kms-creds/credentials.json
+    VAULT_ADDR: https://vault-0.vault-internal:8200
+    VAULT_CACERT: /vault/userconfig/tls-server/ca.crt
+  volumes:
+    - name: certs
+      secret:
+        secretName: ${secret_name}
+        items:
+          - key: ca.crt
+            path: ca.crt
+          - key: tls.crt
+            path: tls.crt
+          - key: tls.key
+            path: tls.key
+    - name: google-kms-creds
+      secret:
+        secretName: google-kms-creds
+        items:
+          - key: key
+            path: credentials.json
+  volumeMounts:
+    - name: certs
+      mountPath: /vault/userconfig/tls-server
+      readOnly: true
+    - name: google-kms-creds
+      mountPath: /vault/userconfig/google-kms-creds
+      readOnly: true
+  readinessProbe:
+    enabled: true
+  livenessProbe:
+    enabled: true
+  ingress:
+    enabled: false
+    ingressClassName: traefik
+    annotations:
+      # cert-manager.io/cluster-issuer: letsencrypt-prod
+      # cert-manager.io/acme-challenge-type: dns01
+      cert-manager.io/issuer: prod-issuer
+      cert-manager.io/issuer-kind: ClusterOriginIssuer
+      cert-manager.io/issuer-group: cert-manager.k8s.cloudflare.com
+      service.beta.kubernetes.io/scw-loadbalancer-use-hostname: "true"
+      traefik.ingress.kubernetes.io/router.entrypoints: websecure
+      # traefik.ingress.kubernetes.io/router.tls.passthrough: "true"
+      # traefik.ingress.kubernetes.io/router.tls: "true"
+
+    hosts:
+      - host: ${host}
+    tls: 
+      - secretName: ${secret_name}
+        hosts:
+          - ${host}
+  ha:
+    enabled: true
+    replicas: 3
+    raft:
+      enabled: true
+      setNodeId: true
+      config: |
+        ui = false
+
+        seal "gcpckms" {
+          project     = "${google_project_name}"
+          region      = "${google_region}"
+          key_ring    = "${google_kms_key_ring_name}"
+          crypto_key  = "${google_kms_crypto_key_name}"
+        }
+
+        listener "tcp" {
+          address = "[::]:8200"
+          cluster_address = "[::]:8201"
+          tls_cert_file = "/vault/userconfig/tls-server/tls.crt"
+          tls_key_file = "/vault/userconfig/tls-server/tls.key"
+        }
+
+        storage "raft" {
+          path = "/vault/data"
+          retry_join {
+            leader_api_addr = "https://vault-0.vault-internal:8200"
+            leader_tls_servername = "vault-0.vault-internal"
+            leader_ca_cert_file = "/vault/userconfig/tls-server/ca.crt"
+            leader_client_cert_file = "/vault/userconfig/tls-server/tls.crt"
+            leader_client_key_file = "/vault/userconfig/tls-server/tls.key"
+          }
+          retry_join {
+            leader_api_addr = "https://vault-1.vault-internal:8200"
+            leader_tls_servername = "vault-0.vault-internal"
+            leader_ca_cert_file = "/vault/userconfig/tls-server/ca.crt"
+            leader_client_cert_file = "/vault/userconfig/tls-server/tls.crt"
+            leader_client_key_file = "/vault/userconfig/tls-server/tls.key"
+          }
+          retry_join {
+            leader_api_addr = "https://vault-2.vault-internal:8200"
+            leader_tls_servername = "vault-0.vault-internal"
+            leader_ca_cert_file = "/vault/userconfig/tls-server/ca.crt"
+            leader_client_cert_file = "/vault/userconfig/tls-server/tls.crt"
+            leader_client_key_file = "/vault/userconfig/tls-server/tls.key"
+          }
+        } 
+ui:
+  enabled: true
+  # serviceType: "LoadBalancer"
+  # serviceNodePort: null
+  # externalPort: 8200

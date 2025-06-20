@@ -1,0 +1,29 @@
+ports:
+  web:
+    redirections:
+      entryPoint:
+        to: websecure
+        scheme: https
+        permanent: true
+deployment:
+  initContainers:
+    - name: volume-permissions
+      image: busybox:latest
+      command: ["sh", "-c", "ls -la /; touch /data/acme.json; chmod -v 600 /data/acme.json; chown 65532:65532 /data/acme.json"]
+      volumeMounts:
+      - mountPath: /data
+        name: data
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
+        runAsNonRoot: false
+        allowPrivilegeEscalation: true
+        capabilities:
+          add: ["ALL"]
+persistence:
+  enabled: true
+  size: 20Gi
+logs:
+  level: DEBUG
+  access:
+    enabled: true

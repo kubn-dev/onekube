@@ -1,0 +1,9 @@
+version: '3'
+
+tasks:
+  login:
+    desc: Login to ArgoCD with SSO using web gRPC
+    cmds:
+      - echo "Login to ArgoCD with SSO using web gRPC"
+      - echo "You will be redirected to the browser for authentication"
+      - argocd login argocd.${CLOUDFLARE_DOMAIN_NAME} --grpc-web --sso

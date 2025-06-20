@@ -1,0 +1,228 @@
+fullnameOverride: argocd
+global:
+  domain: ${host}
+dex:
+  volumeMounts:
+    - name: ${google_dex_service_account_key_secret_name}
+      mountPath: /etc/dex
+      readOnly: true
+  volumes:
+    - name: ${google_dex_service_account_key_secret_name}
+      secret:
+        secretName: ${google_dex_service_account_key_secret_name}
+        items:
+          - key: key
+            path: ${google_dex_service_account_key_secret_name}.json
+redis-ha:
+  enabled: ${replicas > 1}
+  replicas: ${replicas}
+  haproxy:
+    replicas: ${replicas}
+applicationSet:
+  replicas: ${replicas}
+  ingress:
+    enabled: true
+    hostname: ${host_applicationset}
+    ingressClassName: traefik
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      cert-manager.io/acme-challenge-type: dns01
+      service.beta.kubernetes.io/scw-loadbalancer-use-hostname: "true"
+      traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    tls: true
+controller:
+  replicas: ${replicas}
+  env:
+    # https://docs.crossplane.io/latest/guides/crossplane-with-argo-cd/#increase-kubernetes-client-qps
+    - name: ARGOCD_K8S_CLIENT_QPS
+      value: "300"
+    - name: ARGOCD_K8S_CLIENT_BURST
+      value: "600"
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+repoServer:
+  replicas: ${replicas}
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+server:
+  replicas: ${replicas}
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      cert-manager.io/acme-challenge-type: dns01
+      service.beta.kubernetes.io/scw-loadbalancer-use-hostname: "true"
+      traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    tls: true
+configs:
+  rbac:
+    policy.default: role:viewer
+    policy.csv: |
+      p, role:devops, applications, *, */*, allow
+      p, role:developer, applications, get, apps/*, allow
+      p, role:developer, applications, create, apps/*, allow
+      p, role:developer, applications, update, apps/*, allow
+      p, role:developer, applications, delete, apps/*, allow
+      p, role:viewer, applications, get, */*, allow
+      
+      g, role:devops, role:viewer
+      g, role:developer, role:viewer
+      g, ${email}, role:admin
+    scopes: '[groups, email]'
+  params:
+    server.insecure: true
+  cm:
+    kustomize.buildOptions: "--enable-helm"
+    url: https://${host}
+    admin.enabled: false
+    dex.config: |
+      connectors:
+        - config:
+            clientID: ${google_oauth_client_id}
+            clientSecret: ${google_oauth_client_secret}
+            serviceAccountFilePath: /etc/dex/${google_dex_service_account_key_secret_name}.json
+            redirectURI: https://${host}/api/dex/callback
+            hostedDomains:
+              - ${google_oauth_hosted_domain}
+            adminEmail: ${email}
+          type: google
+          id: google
+          name: Google
+    application.resourceTrackingMethod: annotation
+    timeout.reconciliation: 10s
+    resource.customizations: |
+      "*.upbound.io/*":
+        health.lua: |
+          health_status = {
+            status = "Progressing",
+            message = "Provisioning ..."
+          }
+
+          local function contains (table, val)
+            for i, v in ipairs(table) do
+              if v == val then
+                return true
+              end
+            end
+            return false
+          end
+
+          local has_no_status = {
+            "ProviderConfig",
+            "ProviderConfigUsage"
+          }
+
+          if obj.status == nil or next(obj.status) == nil and contains(has_no_status, obj.kind) then
+            health_status.status = "Healthy"
+            health_status.message = "Resource is up-to-date."
+            return health_status
+          end
+
+          if obj.status == nil or next(obj.status) == nil or obj.status.conditions == nil then
+            if obj.kind == "ProviderConfig" and obj.status.users ~= nil then
+              health_status.status = "Healthy"
+              health_status.message = "Resource is in use."
+              return health_status
+            end
+            return health_status
+          end
+
+          for i, condition in ipairs(obj.status.conditions) do
+            if condition.type == "LastAsyncOperation" then
+              if condition.status == "False" then
+                health_status.status = "Degraded"
+                health_status.message = condition.message
+                return health_status
+              end
+            end
+
+            if condition.type == "Synced" then
+              if condition.status == "False" then
+                health_status.status = "Degraded"
+                health_status.message = condition.message
+                return health_status
+              end
+            end
+
+            if condition.type == "Ready" then
+              if condition.status == "True" then
+                health_status.status = "Healthy"
+                health_status.message = "Resource is up-to-date."
+                return health_status
+              end
+            end
+          end
+
+          return health_status
+
+      "*.crossplane.io/*":
+        health.lua: |
+          health_status = {
+            status = "Progressing",
+            message = "Provisioning ..."
+          }
+
+          local function contains (table, val)
+            for i, v in ipairs(table) do
+              if v == val then
+                return true
+              end
+            end
+            return false
+          end
+
+          local has_no_status = {
+            "Composition",
+            "CompositionRevision",
+            "DeploymentRuntimeConfig",
+            "ControllerConfig",
+            "ProviderConfig",
+            "ProviderConfigUsage"
+          }
+          if obj.status == nil or next(obj.status) == nil and contains(has_no_status, obj.kind) then
+              health_status.status = "Healthy"
+              health_status.message = "Resource is up-to-date."
+            return health_status
+          end
+
+          if obj.status == nil or next(obj.status) == nil or obj.status.conditions == nil then
+            if obj.kind == "ProviderConfig" and obj.status.users ~= nil then
+              health_status.status = "Healthy"
+              health_status.message = "Resource is in use."
+              return health_status
+            end
+            return health_status
+          end
+
+          for i, condition in ipairs(obj.status.conditions) do
+            if condition.type == "LastAsyncOperation" then
+              if condition.status == "False" then
+                health_status.status = "Degraded"
+                health_status.message = condition.message
+                return health_status
+              end
+            end
+
+            if condition.type == "Synced" then
+              if condition.status == "False" then
+                health_status.status = "Degraded"
+                health_status.message = condition.message
+                return health_status
+              end
+            end
+
+            if contains({"Ready", "Healthy", "Offered", "Established"}, condition.type) then
+              if condition.status == "True" then
+                health_status.status = "Healthy"
+                health_status.message = "Resource is up-to-date."
+                return health_status
+              end
+            end
+          end
+
+          return health_status

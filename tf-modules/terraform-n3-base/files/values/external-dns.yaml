@@ -1,0 +1,16 @@
+provider:
+  name: cloudflare
+env:
+  - name: CF_API_TOKEN
+    valueFrom:
+      secretKeyRef:
+        name: ${cloudflare_api_token_secret_name}
+        key: ${cloudflare_api_token_secret_key}
+extraArgs:
+  - --cloudflare-proxied
+  - --cloudflare-dns-records-per-page=5000
+sources:
+  - service
+  - ingress
+  - traefik-proxy
+logLevel: debug
