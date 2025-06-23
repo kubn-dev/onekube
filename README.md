@@ -2,11 +2,15 @@
 
 One-ring-to-rules-them-all K8s Cluster setup.
 
-![Octopus](url/of/the/image.jpg "Infra Octopus: A diagram illustrating the interconnected components deployed by OneKube.") describes the components being deployed App-of-Apps by ArgoCD with all resources needed to make the Kubernetes cluster viable including the Cert-manager, ESO, External DNS, Traefik, Hashicorp Vault, Kargo, KRO and Kyverno.
+![Octopus](infra-octopus.png "Infra Octopus: A diagram illustrating the interconnected components deployed by OneKube.")
 
-It also packages Crossplane to manage cloud resources dynamically, a few required providers including GitHub, and their configs.
+OneKube orchestrates a Kubernetes cluster setup through ArgoCD's App-of-Apps pattern. This includes a selection of essential services to ensure a viable and secure cluster environment, such as Cert-manager for certificate management, ESO (External Secrets Operator), External DNS for domain name resolution, Traefik as an ingress controller, Hashicorp Vault for secrets management, Kargo for GitOps orchestration, KRO (Kubernetes Resource Operator), and Kyverno for policy enforcement.
 
-Finally, Octopus deploys "Wings", which are empty shells for users to build their own custom resources and manage their own infra. It is an ArgoCD AppSet designed to create a GitHub repo and deploy all the resources that will be pushed to that repo.
+To facilitate dynamic cloud infrastructure management, OneLube integrates Crossplane along with providers like GitHub, automating the provisioning and lifecycle of external resources.
+
+![Wings](infra-wings.png "Infra Wings: A diagram illustrating the components deployed by the Wings ArgoCD AppSet.")
+
+The "Wings" gives users self-service infra deployment. Wings are empty shells ArgoCD AppSets that automatically create and link to new GitHub repositories, serving as a canvas for users to define and manage their custom resources and infrastructure.
 
 ## Architecture
 
