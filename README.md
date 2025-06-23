@@ -2,6 +2,12 @@
 
 One-ring-to-rules-them-all K8s Cluster setup.
 
+![Octopus](url/of/the/image.jpg "Infra Octopus: A diagram illustrating the interconnected components deployed by OneKube.") describes the components being deployed App-of-Apps by ArgoCD with all resources needed to make the Kubernetes cluster viable including the Cert-manager, ESO, External DNS, Traefik, Hashicorp Vault, Kargo, KRO and Kyverno.
+
+It also packages Crossplane to manage cloud resources dynamically, a few required providers including GitHub, and their configs.
+
+Finally, Octopus deploys "Wings", which are empty shells for users to build their own custom resources and manage their own infra. It is an ArgoCD AppSet designed to create a GitHub repo and deploy all the resources that will be pushed to that repo.
+
 ## Architecture
 
 * Domain Registrar (DNS) and SSL/TLS certificates managed in Cloudflare
